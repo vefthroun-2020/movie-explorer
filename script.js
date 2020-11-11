@@ -1,3 +1,6 @@
+// All movies
+let movies = [];
+
 // Fetch calls return Promises
 const moviePromise = fetch(
   "https://api.themoviedb.org/3/trending/movie/week?api_key=32d9721deb5480178c85e69cf5c335eb"
@@ -11,10 +14,35 @@ moviePromise
   })
   .then(function (data) {
     // Received trending movie data
-    console.log(data);
-
-    const movies = data.results;
+    movies = data.results;
     renderMovies(movies);
+  });
+
+// Get all genres
+fetch(
+  "https://api.themoviedb.org/3/genre/movie/list?api_key=32d9721deb5480178c85e69cf5c335eb"
+)
+  .then((result) => result.json())
+  .then((data) => {
+    const controlsContainer = document.querySelector(".controls-container");
+    const genres = data.genres;
+    const selectEl = document.createElement("select");
+
+    // Filter movies according to the selected genre
+    selectEl.addEventListener("change", function () {
+      const genreIdStr = selectEl.selectedOptions[0].value;
+      const genreId = parseInt(genreIdStr);
+
+      renderMoviesInGenre(movies, genreId);
+    });
+
+    const genresOptions = genres.map((genre) => {
+      return `<option value="${genre.id}">${genre.name}</option>`;
+    });
+
+    selectEl.innerHTML = "<option>Select genre...</option>";
+    selectEl.innerHTML += genresOptions.join("");
+    controlsContainer.appendChild(selectEl);
   });
 
 // A function "encapsulates" behavior
@@ -24,11 +52,20 @@ function renderMovies(movies) {
   moviesContainer.innerHTML = "";
 
   // Render each movie received via argument "movies" into movies container
-  for (let movie of movies) {
-    moviesContainer.innerHTML += `
+
+  // Create an array with all movies templates
+  const movieDivs = movies.map(function (movie) {
+    let moviePoster;
+    if (movie.poster_path) {
+      moviePoster = `<img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" />`;
+    } else {
+      moviePoster = `<p>Image not found</p>`;
+    }
+
+    return `
     <div class="movie">
       <div class="poster-wrapper">
-        <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" />
+        ${moviePoster}
       </div>
 
       <div>
@@ -39,21 +76,63 @@ function renderMovies(movies) {
       </div>
     </div>
     `;
-  }
+  });
+
+  // Join all div templates with not space in between
+  // and add result as the movie container HTML
+  moviesContainer.innerHTML = movieDivs.join("");
 }
 
-/* To be continued on next class :) */
-// Log all movies and their vote averages
-// movies.forEach(function (movie) {
-//   console.log(movie.title, movie.vote_average);
-// });
+// Show movies by genre
+function renderMoviesInGenre(movies, genreId) {
+  // Select all movies in case there's an error with genreId
+  if (!genreId) {
+    renderMovies(movies);
+    return;
+  }
 
-// function myForEach(myFunc) {
-//   myFunc(123);
+  const filteredMovies = movies.filter((movie) => {
+    // Does the passed in genreId
+    if (movie.genre_ids.includes(genreId)) {
+      return true;
+    } else {
+      return false;
+    }
+  });
+
+  renderMovies(filteredMovies);
+}
+
+// // Map to render
+// // Filter
+// // Reduce (highest vote?)
+// // Sort
+
+// function say(name) {
+//   return "Hello " + name;
 // }
 
-// function testFunc(myNumber) {
-//   console.log(myNumber);
+// First class functions
+// const say = function () {
+//   console.log("Worked");
+// };
+
+// function test(callback) {
+//   console.log("Starting my function....");
+//   console.log("Doing some stuff....");
+//   callback();
 // }
 
-// myForEach(testFunc);
+// function makeDog() {
+//   return function () {
+//     return "Test worked";
+//   };
+// }
+
+// const cat = {
+//   breed: "persian",
+//   age: 10,
+//   meow: function () {
+//     console.log("meooow");
+//   },
+// };
